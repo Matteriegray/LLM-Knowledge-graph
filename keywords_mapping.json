@@ -1,0 +1,7 @@
+{
+  "control": "role_permission",
+  "monitor": "role_permission",
+  "configure": "role_permission",
+  "update": "role_permission",
+  "read": "role_permission"
+}

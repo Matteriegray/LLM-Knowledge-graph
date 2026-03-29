@@ -1,26 +1,13 @@
+# graph_queries/get_role_permissions.py
 from neo4j import GraphDatabase
-from dotenv import load_dotenv
-import os
 
-load_dotenv()
-
-uri = os.getenv("NEO4J_URI")
-username = os.getenv("NEO4J_USER")
-password = os.getenv("NEO4J_PASSWORD")
-
-driver = GraphDatabase.driver(uri, auth=(username, password))
-
-query = """
-MATCH (r:Role)-[:HAS_PERMISSION]->(p:Permission)
-RETURN r.name AS role, p.operation AS permission
-"""
-
-with driver.session() as session:
-    result = session.run(query)
-
-    print("\nRole Permissions:\n")
-
-    for record in result:
-        print(record["role"], "->", record["permission"])
-
-driver.close()
+def run(driver):
+    query = """
+    MATCH (r:Role)-[:HAS_PERMISSION]->(p:Permission)-[:ACCESS_TO]->(a:Asset)
+    RETURN r.name AS role, p.operation AS permission, a.name AS asset
+    """
+    
+    with driver.session() as session:
+        result = session.run(query)
+        # Convert Neo4j records to a list of dicts
+        return [record.data() for record in result]

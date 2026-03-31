@@ -1,3 +1,4 @@
+google-generativeai
 neo4j
+networkx
 python-dotenv
-nltk

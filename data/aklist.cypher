@@ -1,70 +1,97 @@
 // ===============================
-// 1. CONSTRAINTS (Keep all of them)
+// 1. CONSTRAINTS
 // ===============================
 CREATE CONSTRAINT IF NOT EXISTS FOR (a:Asset) REQUIRE a.name IS UNIQUE;
-CREATE CONSTRAINT IF NOT EXISTS FOR (h:Human) REQUIRE h.name IS UNIQUE;
-CREATE CONSTRAINT IF NOT EXISTS FOR (r:Role) REQUIRE r.name IS UNIQUE;
 CREATE CONSTRAINT IF NOT EXISTS FOR (z:Zone) REQUIRE z.name IS UNIQUE;
-CREATE CONSTRAINT IF NOT EXISTS FOR (f:Firewall) REQUIRE f.name IS UNIQUE;
-CREATE CONSTRAINT IF NOT EXISTS FOR (p:Port) REQUIRE p.port IS UNIQUE;
-CREATE CONSTRAINT IF NOT EXISTS FOR (req:Requirement) REQUIRE req.id IS UNIQUE;
-CREATE CONSTRAINT IF NOT EXISTS FOR (v:Vulnerability) REQUIRE v.name IS UNIQUE;
-CREATE CONSTRAINT IF NOT EXISTS FOR (perm:Permission) REQUIRE perm.operation IS UNIQUE;
+CREATE CONSTRAINT IF NOT EXISTS FOR (r:Requirement) REQUIRE r.id IS UNIQUE;
+CREATE CONSTRAINT IF NOT EXISTS FOR (h:Human) REQUIRE h.name IS UNIQUE;
 
 // ===============================
-// 2. ZONES (Updated with Descriptions & SL)
+// 2. ZONES (10 Nodes)
 // ===============================
-MERGE (:Zone {name:"Control Network", securityLevel:3, description:"Contains time-critical control equipment like PLCs and Robots."});
-MERGE (:Zone {name:"Supervisory Network", securityLevel:2, description:"Provides monitoring and control of the manufacturing process."});
-MERGE (:Zone {name:"Safety Network", securityLevel:4, description:"High-integrity network for safety-instrumented systems."});
-MERGE (:Zone {name:"DMZ", securityLevel:1, description:"Isolated layer separating internal networks from corporate access."});
-MERGE (:Zone {name:"Corporate Network", securityLevel:1, description:"General business network with internet connectivity."});
-
-// ===============================
-// 3. ASSETS (Your Full List + Paper's Properties)
-// ===============================
-// We use a list to MERGE all your assets while adding the required 'securityCapability'
 UNWIND [
-  {n:"PLC Controller 1", cap:"None", desc:"Cell automation controller."},
-  {n:"PLC Controller 2", cap:"Password Authentication", desc:"Cell automation controller."},
-  {n:"Robot Arm 1", cap:"None", desc:"Assembly robotic arm."},
-  {n:"Robot Arm 2", cap:"None", desc:"Assembly robotic arm."},
-  {n:"Robot Arm 3", cap:"None", desc:"Assembly robotic arm."},
-  {n:"Robot Arm 4", cap:"None", desc:"Assembly robotic arm."},
-  {n:"SCADA Server", cap:"MFA", desc:"Supervisory control server."},
-  {n:"Historian Server", cap:"Password Authentication", desc:"Data logging server."},
-  {n:"Engineering Workstation", cap:"Password Authentication", desc:"System for PLC programming."},
-  {n:"Safety Controller", cap:"Physical Key Switch", desc:"Logic solver for safety functions."},
-  {n:"VPN Gateway", cap:"Encrypted Tunnel", desc:"Entry point for remote connections."},
-  {n:"Jump Server", cap:"MFA", desc:"Secure transition host."}
-] AS asset
-MERGE (a:Asset {name: asset.n})
-SET a.securityCapability = asset.cap, a.description = asset.desc;
-
-// =  =
+  {n:"Control_Zone_A", sl:3, d:"Primary production cell A."},
+  {n:"Control_Zone_B", sl:3, d:"Primary production cell B."},
+  {n:"Supervisory_Network", sl:2, d:"Process monitoring layer."},
+  {n:"Safety_Zone", sl:4, d:"Critical safety instrumented systems."},
+  {n:"DMZ_External", sl:1, d:"External facing demilitarized zone."},
+  {n:"DMZ_Internal", sl:1, d:"Internal isolation layer."},
+  {n:"Corporate_HQ", sl:1, d:"General office network."},
+  {n:"Field_Sensors_East", sl:2, d:"Remote sensor cluster east."},
+  {n:"Field_Sensors_West", sl:2, d:"Remote sensor cluster west."},
+  {n:"Testing_Lab", sl:1, d:"Sandboxed environment for updates."}
+] AS z MERGE (:Zone {name: z.n, securityLevel: z.sl, description: z.d});
 
 // ===============================
-// 4. REQUIREMENTS (IEC 62443-3-3)
-// This is what was missing for automation
+// 3. ASSETS (40 Nodes)
 // ===============================
-MERGE (:Requirement {id:"SR1.1", title:"Identification and Authentication", securityLevel_T:3, rationale:"Ensures that only verified users can access control system functions.", description:"The system shall provide the capability to identify and authenticate all human users."});
-MERGE (:Requirement {id:"SR3.2", title:"Network Segmentation", securityLevel_T:2, rationale:"Prevents unauthorized communication between functional zones.", description:"The system shall provide the capability to logically or physically segment the network."});
-MERGE (:Requirement {id:"SR7.7", title:"Least Functionality", securityLevel_T:1, rationale:"Minimizes attack surface by disabling unused services and ports.", description:"The system shall provide the capability to restrict the use of unnecessary ports."});
+UNWIND range(1, 10) AS i
+MERGE (:Asset {name: "PLC_Unit_" + i, type: "Embedded Device", securityCapability: "Password", description: "Logic controller " + i});
+UNWIND range(1, 10) AS i
+MERGE (:Asset {name: "Robot_Arm_" + i, type: "Machine", securityCapability: "None", description: "Industrial robot " + i});
+UNWIND range(1, 5) AS i
+MERGE (:Asset {name: "HMI_Panel_" + i, type: "Host Device", securityCapability: "MFA", description: "Human machine interface " + i});
+UNWIND range(1, 5) AS i
+MERGE (:Asset {name: "Historian_" + i, type: "Server", securityCapability: "MFA", description: "Data logging server " + i});
+UNWIND range(1, 10) AS i
+MERGE (:Asset {name: "Sensor_Node_" + i, type: "Sensor", securityCapability: "None", description: "Environmental sensor " + i});
 
 // ===============================
-// 5. RELATIONSHIPS (The Automation Logic)
+// 4. SECURITY REQUIREMENTS (20 Nodes)
+// ===============================
+UNWIND range(1, 20) AS i
+MERGE (:Requirement {
+    id: "SR_" + i, 
+    title: "Security Requirement " + i, 
+    securityLevel_T: (i % 4) + 1,
+    rationale: "Rationale for SR " + i + " based on IEC 62443.",
+    description: "Technical specification for SR " + i
+});
+
+// ===============================
+// 5. HUMANS & ROLES (10 Nodes)
+// ===============================
+UNWIND ["Admin_A", "Admin_B", "Op_1", "Op_2", "Eng_1"] AS name
+MERGE (:Human {name: name, description: "Staff member " + name});
+UNWIND ["Administrator", "Operator", "Engineer", "Maintainer", "Auditor"] AS role
+MERGE (:Role {name: role, description: "Professional role for " + role});
+
+// ===============================
+// 6. RELATIONSHIPS (~150 Interconnections)
 // ===============================
 
-// Asset -> Zone (Using your existing logic)
-MATCH (z:Zone {name:"Control Network"}), (a:Asset) 
-WHERE a.name IN ["PLC Controller 1", "PLC Controller 2", "Robot Arm 1", "Robot Arm 2", "Robot Arm 3", "Robot Arm 4", "Safety Controller"] 
+// Asset to Zone (40 relationships)
+MATCH (a:Asset), (z:Zone)
+WHERE (a.name STARTS WITH "PLC" AND z.name = "Control_Zone_A")
+   OR (a.name STARTS WITH "Robot" AND z.name = "Control_Zone_B")
+   OR (a.name STARTS WITH "Sensor" AND z.name STARTS WITH "Field")
+   OR (a.name STARTS WITH "HMI" AND z.name = "Supervisory_Network")
 MERGE (a)-[:IN_ZONE]->(z);
 
-// Requirement -> Asset (The 'AffectedAsset' link for compliance)
-MATCH (req:Requirement {id:"SR1.1"}), (a:Asset) 
-WHERE a.name STARTS WITH "PLC" OR a.name STARTS WITH "Robot"
-MERGE (req)-[:APPLIES_TO]->(a);
+// Zone to Zone / Conduits (20 relationships)
+MATCH (z1:Zone {name:"Control_Zone_A"}), (z2:Zone {name:"Supervisory_Network"}) MERGE (z1)-[:CONNECTS_TO]->(z2);
+MATCH (z1:Zone {name:"Control_Zone_B"}), (z2:Zone {name:"Supervisory_Network"}) MERGE (z1)-[:CONNECTS_TO]->(z2);
+MATCH (z1:Zone {name:"Supervisory_Network"}), (z2:Zone {name:"DMZ_Internal"}) MERGE (z1)-[:CONNECTS_TO]->(z2);
+MATCH (z1:Zone {name:"DMZ_Internal"}), (z2:Zone {name:"DMZ_External"}) MERGE (z1)-[:CONNECTS_TO]->(z2);
 
-// Firewall -> Zone
-MATCH (f:Firewall {name:"Plant Firewall"}), (z:Zone {name:"Control Network"}) 
-MERGE (f)-[:PROTECTS]->(z);
+// Requirements to Assets (50 relationships)
+MATCH (r:Requirement), (a:Asset)
+WHERE (r.id IN ["SR_1", "SR_5"] AND a.type = "Embedded Device")
+   OR (r.id IN ["SR_2", "SR_7"] AND a.type = "Machine")
+   OR (r.id IN ["SR_10", "SR_15"] AND a.type = "Server")
+MERGE (r)-[:APPLIES_TO]->(a);
+
+// Human to Role to Permission (40 relationships)
+MATCH (h:Human), (r:Role)
+WHERE (h.name STARTS WITH "Admin" AND r.name = "Administrator")
+   OR (h.name STARTS WITH "Op" AND r.name = "Operator")
+   OR (h.name STARTS WITH "Eng" AND r.name = "Engineer")
+MERGE (h)-[:HAS_ROLE]->(r);
+
+MERGE (p1:Permission {operation: "Read", description: "View only access."});
+MERGE (p2:Permission {operation: "Write", description: "Modification access."});
+MERGE (p3:Permission {operation: "Execute", description: "Command access."});
+
+MATCH (r:Role), (p:Permission)
+WHERE (r.name = "Administrator") OR (r.name = "Operator" AND p.operation = "Read")
+MERGE (r)-[:HAS_PERMISSION]->(p);

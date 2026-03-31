@@ -1,4 +1,5 @@
-google-generativeai
+﻿google-generativeai
 neo4j
 networkx
+numpy
 python-dotenv

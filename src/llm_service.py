@@ -1,15 +1,13 @@
 import os
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 class LlamaService:
     """
-    LLM Service using Google Gemini API.
+    LLM Service using Google Gemini API (new google.genai SDK).
     Implements the two core LLM calls described in Algorithm 1 of the paper:
       - identify_classes(): Zero-shot prompting to find relevant ontology classes (Line 5)
       - generate_response(): Final answer generation from augmented prompt (Line 15)
-
-    Get your free API key at: https://aistudio.google.com/app/apikey
-    Add to .env file as: GEMINI_API_KEY=your_key_here
     """
 
     # Ontology classes from Figure 2 of the paper
@@ -31,25 +29,8 @@ class LlamaService:
                 "Please add it to your .env file as: GEMINI_API_KEY=your_key_here\n"
                 "Get a free key at: https://aistudio.google.com/app/apikey"
             )
-        genai.configure(api_key=api_key)
-
-        # gemini-1.5-flash is free tier, fast, and more than capable for this task
-        self.model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.2,
-                max_output_tokens=1024,
-            )
-        )
-
-        # Separate low-temperature config for class identification (needs to be deterministic)
-        self.classifier_model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.0,
-                max_output_tokens=150,
-            )
-        )
+        self.client = genai.Client(api_key=api_key)
+        self.model = "gemini-3-flash-preview"
 
     # ------------------------------------------------------------------
     # Algorithm 1 - Line 5: Zero-shot class identification
@@ -77,7 +58,15 @@ User question: {question}
 
 Relevant classes:"""
 
-        response = self.classifier_model.generate_content(prompt)
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.0,
+                max_output_tokens=150,
+            )
+        )
+
         raw_output = response.text.strip()
 
         # Parse and validate against known ontology classes
@@ -118,15 +107,14 @@ Your job:
 - If the provided context is insufficient to fully answer, say so clearly
 - Do NOT guess or hallucinate information that is not in the context"""
 
-        # Gemini takes system instruction separately from the user prompt
-        model_with_system = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
-            system_instruction=system_instruction,
-            generation_config=genai.types.GenerationConfig(
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=final_prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
                 temperature=0.2,
                 max_output_tokens=1024,
             )
         )
 
-        response = model_with_system.generate_content(final_prompt)
         return response.text.strip()

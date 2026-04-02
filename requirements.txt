@@ -1,4 +1,4 @@
-﻿google-genai
+﻿google-ai
 neo4j
 networkx
 numpy

@@ -5,12 +5,12 @@ from google.genai import types
 class LlamaService:
     """
     LLM Service using Google Gemini API (new google.genai SDK).
-    Implements the two core LLM calls described in Algorithm 1 of the paper:
-      - identify_classes(): Zero-shot prompting to find relevant ontology classes (Line 5)
-      - generate_response(): Final answer generation from augmented prompt (Line 15)
+    Implements the core LLM calls described in Algorithm 1 of the paper:
+      - identify_classes(): Zero-shot class identification (Line 5)
+      - generate_response(): Final technical response generation (Line 15)
+      - humanize_output(): NLP Narrative Layer for user-friendly reporting.
     """
 
-    # Ontology classes from Figure 2 of the paper
     ONTOLOGY_CLASSES = [
         "Zone", "Conduit", "Asset", "Hardware", "Software", "Human",
         "EmbeddedDevice", "HostDevice", "NetworkDevice", "SoftwareApplication",
@@ -26,86 +26,33 @@ class LlamaService:
         if not api_key:
             raise ValueError(
                 "GEMINI_API_KEY not found. "
-                "Please add it to your .env file as: GEMINI_API_KEY=your_key_here\n"
-                "Get a free key at: https://aistudio.google.com/app/apikey"
+                "Please add it to your .env file as: GEMINI_API_KEY=your_key_here"
             )
         self.client = genai.Client(api_key=api_key)
         self.model = "gemini-3-flash-preview"
 
-    # ------------------------------------------------------------------
-    # Algorithm 1 - Line 5: Zero-shot class identification
-    # ------------------------------------------------------------------
     def identify_classes(self, question: str) -> list:
-        """
-        Uses zero-shot prompting to identify which ontology classes from
-        Figure 2 of the paper are most relevant to the user's question.
-        Returns a list of class name strings (e.g. ["Zone", "Firewall"]).
-        """
+        """Algorithm 1 - Line 5: Zero-shot class identification"""
         classes_list = ", ".join(self.ONTOLOGY_CLASSES)
-
-        prompt = f"""You are an ICS (Industrial Control System) security expert working with an ontology based on IEC 62443.
-
-The ontology contains these classes:
-{classes_list}
-
-Given the following user question, identify which ontology classes are most relevant 
-for retrieving information to answer it.
-
-Return ONLY a comma-separated list of class names from the list above.
-No explanations, no extra text, no punctuation — just the class names separated by commas.
-
-User question: {question}
-
-Relevant classes:"""
+        prompt = f"""You are an ICS security expert. Identify relevant ontology classes: {classes_list}
+Return ONLY a comma-separated list.
+User question: {question}"""
 
         response = self.client.models.generate_content(
             model=self.model,
             contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.0,
-                max_output_tokens=150,
-            )
+            config=types.GenerateContentConfig(temperature=0.0, max_output_tokens=150)
         )
-
+        
         raw_output = response.text.strip()
+        identified = [cls.strip() for cls in raw_output.split(",") if cls.strip() in self.ONTOLOGY_CLASSES]
+        return identified if identified else ["Zone", "Asset", "SystemSecurityRequirement"]
 
-        # Parse and validate against known ontology classes
-        identified = [
-            cls.strip()
-            for cls in raw_output.split(",")
-            if cls.strip() in self.ONTOLOGY_CLASSES
-        ]
-
-        # Fallback: if nothing valid comes back, use safe defaults
-        if not identified:
-            print(f"[Warning] Could not identify classes from: '{raw_output}'. Using defaults.")
-            identified = ["Zone", "Asset", "SystemSecurityRequirement"]
-
-        print(f"[Debug] Identified classes: {identified}")
-        return identified
-
-    # ------------------------------------------------------------------
-    # Algorithm 1 - Line 15: Final response generation
-    # ------------------------------------------------------------------
     def generate_response(self, final_prompt: str) -> str:
-        """
-        Takes the fully augmented prompt (user question + graph sentences +
-        IEC 62443 context) and generates a detailed security analysis response.
-        This corresponds to Algorithm 1, Line 15 of the paper.
-        """
-        system_instruction = """You are a security-by-design assistant for Industrial Control Systems (ICS).
-
-You have been given:
-1. A user's security question
-2. Sentences describing the system architecture retrieved from a knowledge graph
-3. Relevant terms and definitions from the IEC 62443-3-3 security standard
-
-Your job:
-- Answer the question based ONLY on the provided architecture and standard context
-- Be precise, technical, and structured in your response
-- If you reference a specific asset, zone, firewall, or requirement — name it explicitly
-- If the provided context is insufficient to fully answer, say so clearly
-- Do NOT guess or hallucinate information that is not in the context"""
+        """Algorithm 1 - Line 15: Final technical response generation"""
+        system_instruction = """You are a security-by-design assistant for ICS.
+Answer based ONLY on the provided architecture and standard context.
+Be precise, technical, and structured. Do NOT hallucinate."""
 
         response = self.client.models.generate_content(
             model=self.model,
@@ -116,5 +63,35 @@ Your job:
                 max_output_tokens=1024,
             )
         )
+        return response.text.strip()
 
+    # ------------------------------------------------------------------
+    # NEW: NLP Narrative Layer
+    # ------------------------------------------------------------------
+    def humanize_output(self, question: str, technical_data: str) -> str:
+        """
+        Converts detailed technical security analysis into a 
+        user-friendly executive summary for non-technical stakeholders.
+        """
+        humanizer_prompt = f"""
+        You are a friendly IT Security Consultant. 
+        Transform the technical analysis below into a 'Human-Friendly' report.
+
+        Instructions:
+        1. Start with a 'Summary' (The Bottom Line).
+        2. Use clear headings like 'What We Found' and 'Recommended Actions'.
+        3. Explain technical issues (like "Missing Authentication") in plain English.
+        4. Keep the specific names of assets (e.g. PLC_Controller_1).
+        5. Avoid database terms like "triples", "nodes", or "relationships".
+
+        Original Question: {question}
+        Technical Data: {technical_data}
+
+        Friendly Report:"""
+
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=humanizer_prompt,
+            config=types.GenerateContentConfig(temperature=0.3)
+        )
         return response.text.strip()

@@ -141,7 +141,7 @@ def main():
     finally:
         # Ensure driver is closed properly on exit
         driver.close()
-        print("\n[Info] Database connection closed. Goodbye!")
+        print("\n[Info] Database connection closed. Have a nice day!")
 
 
 if __name__ == "__main__":

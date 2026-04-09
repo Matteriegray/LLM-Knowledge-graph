@@ -41,7 +41,8 @@ User question: {question}"""
         response = self.client.models.generate_content(
             model=self.model,
             contents=prompt,
-            config=types.GenerateContentConfig(temperature=0.0, max_output_tokens=150)
+            config=types.GenerateContentConfig(temperature=0.0, 
+                                               max_output_tokens=150)
         )
         
         raw_output = response.text.strip()

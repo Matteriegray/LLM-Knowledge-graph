@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ICS Security Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="logo-badge">ICS</div>
+          <div>
+            <h1>ICS Security Assistant</h1>
+            <p>Ask security questions about your knowledge graph.</p>
+          </div>
+        </div>
+      </header>
+
+      <main class="chat-frame">
+        {% if startup_error %}
+        <div class="alert error">
+          <strong>Startup error:</strong> {{ startup_error }}
+          <div>Please verify Neo4j, Gemini API key, and environment variables.</div>
+        </div>
+        {% endif %}
+
+        <section class="chat-panel" id="chatPanel">
+          <div class="empty-state" id="emptyState">
+            <h2>Hi there.</h2>
+          </div>
+          <div class="chat-list" id="chatList"></div>
+        </section>
+
+        <form class="composer" id="chatForm">
+          <textarea id="prompt" name="prompt" rows="2" placeholder="Type a question..." required></textarea>
+          <div class="controls">
+            <button type="submit" class="btn-primary">Send</button>
+            <span class="help-text">Enter to send. Shift+Enter for newline.</span>
+          </div>
+        </form>
+      </main>
+    </div>
+
+    <template id="messageTemplate">
+      <div class="message">
+        <div class="bubble"></div>
+      </div>
+    </template>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+</html>
+  </body>
+</html>

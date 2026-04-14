@@ -35,6 +35,7 @@ body {
 
 .topbar {
   display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 14px;
   padding: 18px 20px;
@@ -155,25 +156,34 @@ body {
 
 .composer {
   display: grid;
-  gap: 12px;
-  padding: 16px 18px;
-  border-radius: 22px;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 20px;
   background: rgba(15, 23, 42, 0.94);
   border: 1px solid rgba(71, 85, 105, 0.18);
 }
 
 textarea {
   width: 100%;
-  min-height: 10px;
+  min-height: 64px;
   resize: vertical;
   border: 1px solid rgba(71, 85, 105, 0.7);
-  border-radius: 16px;
+  border-radius: 14px;
   background: rgba(15, 23, 42, 0.9);
   color: #f8fafc;
-  padding: 14px 16px;
-  font-size: 1rem;
-  line-height: 1.6;
+  padding: 12px 14px;
+  font-size: 0.98rem;
+  line-height: 1.5;
   outline: none;
+}
+
+.composer.small {
+  padding: 10px 12px;
+}
+
+.composer.small textarea {
+  min-height: 52px;
+  padding: 10px 12px;
 }
 
 textarea:focus {
@@ -191,8 +201,8 @@ textarea:focus {
 
 .btn-primary {
   border: none;
-  border-radius: 16px;
-  padding: 14px 24px;
+  border-radius: 14px;
+  padding: 12px 20px;
   background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%);
   color: #0b1120;
   font-weight: 700;

@@ -3,6 +3,8 @@ const promptInput = document.getElementById('prompt');
 const chatList = document.getElementById('chatList');
 const emptyState = document.getElementById('emptyState');
 const messageTemplate = document.getElementById('messageTemplate');
+const topbar = document.querySelector('.topbar');
+const composer = document.querySelector('.composer');
 
 function escapeHtml(text) {
   const div = document.createElement('div');
@@ -89,7 +91,10 @@ form.addEventListener('submit', async (event) => {
   if (!question) return;
 
   addMessage('user', question);
+  form.reset();
   promptInput.value = '';
+  topbar.style.display = 'none';
+  composer.classList.add('small');
   promptInput.focus();
   setTyping(true);
 

@@ -30,24 +30,6 @@ Additionally, performance metrics such as semantic similarity, factual consisten
 
 ---
 
-## Project Structure
-
-project/
-│
-├── .env                  # Environment variables (not committed)
-├── .env.example          # Sample environment configuration
-├── .gitignore
-├── requirements.txt
-│
-└── src/
-    ├── main.py           # Entry point
-    ├── llm_service.py    # LLM interaction layer
-    ├── evaluation.py     # Metrics computation
-    ├── metrics_store.py  # Stores evaluation data
-    ├── plot_metrics.py   # Visualization
-
----
-
 ## Setup Instructions
 
 ### 1. Clone the Repository
@@ -117,7 +99,7 @@ During execution, the system computes:
 
 These are printed in the terminal:
 
-[METRICS - INTERNAL]  
+Metrics  
 Semantic Similarity: 81.45%  
 Factual Consistency: 74.20%  
 Latency: 1.23s  
@@ -136,31 +118,8 @@ plot_metrics()
 This generates a graph showing:
 - Semantic similarity trend  
 - Factual consistency trend  
-- Latency  
-
----
-
-## Troubleshooting
-
-Module not found errors:  
-pip install -r requirements.txt  
-
-API Key not found:  
-Ensure `.env` contains:  
-GEMINI_API_KEY=your_key  
-
-No graph displayed:  
-- Run multiple queries first  
-- Then call plot_metrics()  
-
----
-
-## Notes
-
-- Metrics are approximate and do not rely on a labeled dataset  
-- Latency values may appear smaller compared to other metrics due to scale differences  
-- First execution may take longer due to model download (Sentence Transformers)  
-
+- Latency
+  
 ---
 
 ## Summary

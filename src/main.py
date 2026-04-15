@@ -5,6 +5,7 @@ from ranker import CentralityRanker
 from vector_db import SecurityStandardDB
 from llm_service import LlamaService
 from dotenv import load_dotenv
+from plot_metrics import plot_metrics
 
 # Load environment variables at the very beginning
 load_dotenv()
@@ -146,3 +147,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    plot_metrics()

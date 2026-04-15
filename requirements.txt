@@ -4,3 +4,4 @@ neo4j
 networkx
 numpy
 python-dotenv
+sentence-transformers

@@ -1,6 +1,9 @@
 import os
 from google import genai
 from google.genai import types
+import time
+from metrics_store import metrics_data
+from evaluation import semantic_similarity, factual_consistency
 
 class LlamaService:
     """
@@ -50,10 +53,14 @@ User question: {question}"""
         return identified if identified else ["Zone", "Asset", "SystemSecurityRequirement"]
 
     def generate_response(self, final_prompt: str) -> str:
-        """Algorithm 1 - Line 15: Final technical response generation"""
+        """Algorithm 1 - Line 15: Final technical response generation + metrics"""
+
         system_instruction = """You are a security-by-design assistant for ICS.
-Answer based ONLY on the provided architecture and standard context.
-Be precise, technical, and structured. Do NOT hallucinate."""
+    Answer based ONLY on the provided architecture and standard context.
+    Be precise, technical, and structured. Do NOT hallucinate."""
+
+        # ⏱ Start time
+        start_time = time.time()
 
         response = self.client.models.generate_content(
             model=self.model,
@@ -64,7 +71,36 @@ Be precise, technical, and structured. Do NOT hallucinate."""
                 max_output_tokens=1024,
             )
         )
-        return response.text.strip()
+
+        # ⏱ End time
+        end_time = time.time()
+        latency = end_time - start_time
+
+        output_text = response.text.strip()
+
+        # 🧠 Metrics Calculation (safe + silent)
+        try:
+            expected = final_prompt  # fallback baseline
+
+            sem_score = semantic_similarity(expected, output_text)
+            fact_score = factual_consistency(expected, output_text)
+
+            # 📦 Store globally
+            metrics_data["queries"].append(len(metrics_data["queries"]) + 1)
+            metrics_data["semantic"].append(sem_score)
+            metrics_data["factual"].append(fact_score)
+            metrics_data["latency"].append(latency)
+
+            # 🖥️ Backend logging ONLY
+            print("\nMETRICS")
+            print(f"Semantic Similarity: {sem_score:.2f}%")
+            print(f"Factual Consistency: {fact_score:.2f}%")
+            print(f"Latency: {latency:.2f}s")
+
+        except Exception as e:
+            print(f"[Metrics Error]: {e}")
+
+        return output_text
 
     # ------------------------------------------------------------------
     # NEW: NLP Narrative Layer

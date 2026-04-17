@@ -125,3 +125,5 @@ This generates a graph showing:
 ## Summary
 
 This system demonstrates how combining structured knowledge with LLM reasoning can automate security analysis, reduce manual effort, and provide interpretable insights for complex ICS environments.
+
+Happy Coding!!
